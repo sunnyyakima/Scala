@@ -1,0 +1,77 @@
+
+primary constructor:
+class Foo(bar: Int)
+bar: Int  is barely a constructor parameter. If this variable is not used anywhere except the constructor, it remains there. 
+No field is generated. Otherwise private val bar field is created and value of bar parameter is assigned to it. 
+No getter is created
+
+class Foo(private val bar: Int)
+Such declaration of parameter will create private val bar field with private getter. This behavior is the same as above no 
+matter if the parameter was used beside the constructor (e.g. in toString() or not).
+
+class Person(name: String, age: Int) { println(name + " has age: " + age) }
+val p1 = new Person("Sam", 20)
+Sam has age: 20
+p1: Person = Person@532760d8
+p1.name  // error: value name is not a member of Person
+
+class Person(val name: String, val age: Int) { println(name + " has age: " + age) }
+val p1 = new Person("Sam", 20)
+Sam has age: 20
+p1.name
+res1: String = Sam
+
+class without primary constructor
+class Person {  private var name = "" ;  private var age = 0  }
+val p2 = new Person
+p2.name   // error: variable name in class Person cannot be accessed in Person
+
+class = Person { var name = ""; var age = 0 }
+var p2 = new Person
+p2.name   // res4: String = ""
+p2.name = "Sam"   // p2.name: String = Sam
+
+auxiliary constructor
+called this, and must start with a call to either primary constructor or previous defined auxiliary
+class Person {
+  private var name = ""
+  private var age = 0
+  
+  def this(name: String) {
+     this()
+     this.name = name
+  }
+  def this(name: String, age: Int) {
+     this()
+     this.name = name
+     this.age = age
+  }
+}
+
+object
+similar to factory method, has same with class, at same source file with class, and don't use new when define instance
+class MyString(val jString:String) { private var extraData = ""; override def toString = jString+extraData }  
+object MyString {
+    def apply(base:String, extras:String) = { val s = new MyString(base);  s.extraData = extras; s }   
+    def apply(base:String) = new MyString(base) 
+} 
+val a = MyString("A", "B"); println(a)
+val b = new MyString("c") ; println(b)
+
+abstract class and case class
+abstract class Amount
+case class Dollar(value: Double) extends Amount
+case class Currency(vale: Double, unit: String) extends Amount
+
+val amt1 = Dollar(29.95) // no new is needed
+val amt2 = Currency(30.01, "EUR")
+def checkType(amt: Any) {
+   amt match {
+     case Dollar(v) => println(s"$v")
+     case Currency(_, u) => println(s"Oh noes, I got $u")
+     case _ => println("nothing")
+  }
+}
+checkType(amt1)
+checkType(amt2)
+
