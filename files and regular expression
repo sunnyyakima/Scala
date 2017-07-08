@@ -1,0 +1,20 @@
+
+import scala.io.Source
+val source = Source.fromFile("myfile.txt")
+val lineIterator = source.getLines
+for line <- lineIterator) { ....  }
+val lins = source.getLines.toArray
+val contents = source.mkString
+
+get argumens from command line
+object Hello extends App {
+    println("Hello, world")
+    // if you want to access the command line args:
+    args.foreach(println)
+}
+Hello.main(args)
+
+import java.io.PrintWriter
+val out = new PrintWriter("numbers.txt")
+for(i <- 1 to 100) out.println(i)
+out.close()
