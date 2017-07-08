@@ -1,0 +1,24 @@
+From Scala cookbook and http://alvinalexander.com
+In many situtation, an option/some/none is returned, one example is the findFirstIn to determine the first match of 
+String containing a regular expression pattern. the simple way to think about an Option is that it’s a container that
+holds either zero or one values. In the case of findFirstIn, if it succeeds, it returns the string “XXX” as a Some("XXX").
+However, if it fails to find the pattern in the string it’s searching, it will return a None.
+The normal way to work with an Option is to use one of these approaches:
+    Use the Option in a match expression
+    Use the Option in a foreach loop
+    Call getOrElse on the value
+
+match expression:
+match1 match {
+    case Some(s) => println(s"Found: $s")
+    case None =>
+}
+
+for loop:
+numPattern.findFirstIn(address).foreach { e =>
+    // perform the next step in your algorithm,
+    // operating on the value 'e'
+}
+
+getOrElse:
+val result = numPattern.findFirstIn(address).getOrElse("no match")
