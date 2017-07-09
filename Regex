@@ -1,0 +1,6 @@
+
+import scala.util.matching.Regex
+val numPattern = new Regex("[0-9]+")
+val address = "123 street name, zipcode 98765"
+val matchResult1 = numPattern.findFirstIn(address)
+val matchResult2 = numPattern.findAllIn(address)
