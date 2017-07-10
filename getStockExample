@@ -1,0 +1,125 @@
+# a piece of scala code from web: http://alvinalexander.com and Scala Cookbook
+
+# StockUtils.scala
+package com.devdaily.stocks
+
+import java.io._
+import scala.io.Source
+
+// requires htmlcleaner library
+import org.htmlcleaner.HtmlCleaner
+
+/**
+ * USAGE: 
+ * import java.io._
+ * import scala.io.Source
+ * import com.devdaily.stocks.StockUtils
+ *
+ * object Main extends App {
+ *  
+ *   def getStockPrice(symbol: String) = {
+ *     val html = IO.getHtmlFromFile(symbol)
+ *     StockUtils.extractPriceFromHtml(html, symbol)
+ *   }
+ * 
+ * }
+ * 
+ */
+object StockUtils {
+
+  // TODO use a 'get url contents' method where i can control the timeout value
+  def getHtmlFromUrl(symbol: String) = {
+    val url = "http://finance.yahoo.com/q/ks?s=%s+Key+Statistics".format(symbol.trim.toUpperCase)
+    Source.fromURL(url).mkString
+  }
+
+  /*
+   * <div class="yfi_rt_quote_summary_rt_top"><p>
+   * <span class="time_rtq_ticker">
+   * <span id="yfs_l84_hpq">19.70</span></span>
+   */
+  def extractPriceFromHtml(html: String, symbol: String): String = {
+    val cleaner = new HtmlCleaner
+    val rootNode = cleaner.clean(html)
+
+    var keepLooking = true
+    var price = "0.00"
+    val elements = rootNode.getElementsByName("span", true)
+    for (elem <- elements if keepLooking) {
+      val classType = elem.getAttributeByName("id")
+      if (classType != null && classType.equalsIgnoreCase("yfs_l84_" + symbol.toLowerCase)) {
+        price = elem.getText.toString.trim
+        keepLooking = false
+      }
+    }
+    return price
+  }
+
+  // for testing
+  def getHtmlFromFile(symbol: String) = {
+    val filename = symbol + ".html"
+    Source.fromFile(filename).getLines.mkString
+  }
+
+  // for testing
+  def saveContentsToFile(contents: String, filename: String) {
+    val pw = new PrintWriter(new File(filename))
+    pw.write(contents)
+    pw.close
+  }
+
+}
+
+# getStock.scala
+import java.io._
+import scala.io.Source
+import com.devdaily.stocks.StockUtils
+import scala.collection.mutable.ArrayBuffer
+
+object GetStocks {
+
+  case class Stock(symbol: String, name: String, price: BigDecimal)
+
+  val DIR = System.getProperty("user.dir")
+  val SLASH = System.getProperty("file.separator")
+  val CANON_STOCKS_FILE = DIR + SLASH + "stocks.txt"
+  val CANON_OUTPUT_FILE = DIR + SLASH + "quotes.out"
+
+  def main(args: Array[String]) {
+    // read the stocks file into a list of strings ("AAPL|Apple")
+    val lines = Source.fromFile(CANON_STOCKS_FILE).getLines.toList
+    // create a list of Stock from the symbol, name, and by
+    // retrieving the price
+    var stocks = new ArrayBuffer[Stock]()
+    lines.foreach{ line =>
+      val fields = line.split("\\|")
+      val symbol = fields(0)
+//      val html = StockUtils.getHtmlFromUrl(symbol)
+//      val price = StockUtils.extractPriceFromHtml(html, symbol)
+      val html = getHtmlFromUrl(symbol)
+      val price = extractPriceFromHtml(html, symbol)
+
+      val stock = Stock(symbol, fields(1), BigDecimal(price))
+      stocks += stock
+    }
+
+    // build a string to output
+    var sb = new StringBuilder
+    stocks.foreach { stock =>
+      sb.append("%s is %s\n".format(stock.name, stock.price))
+    }
+    val output = sb.toString
+
+    // write the string to the file
+    val pw = new PrintWriter(new File(CANON_OUTPUT_FILE))
+    pw.write(output)
+    pw.close
+  }
+}
+
+GetStocks.main(args)
+
+# stocks.txt
+AAPL|Apple
+KKD|Krispy Kreme
+NFLX|Netflix
