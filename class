@@ -75,3 +75,74 @@ def checkType(amt: Any) {
 checkType(amt1)
 checkType(amt2)
 
+//assignment: Scala impatient
+
+class Person(val firstName: String, val lastName: String) {
+   println("the constructor beins")
+   val fullName = firstName +" " + lastName
+
+   val HOME = System.getProperty("user.home")
+
+   def foo() { println("foo") }
+   def printFullName { println(fullName)  }
+   
+   printFullName
+   println("still in constructor")
+}
+
+class BankAccount() {
+   private var currentBalance = 0
+   def deposit(val amt: Double) currentBalance  += amt
+   def withdraw(val amt: Double) { 
+      if (amt <= currentBalance ) currentBalance -= amt
+      else throw new Exception("low balance")
+   }
+   def balance = currentBalance
+}
+
+class Time(hrs: Int, min: Int) {
+   private var hours = hrs
+   private var minutes = min
+   def before(other: Time): Boolean {
+      val h = other.hours - this.hours
+      val m = other.minutes - this.minute
+      if(h < 0) true
+      else if(m < 0) true
+      else false
+    }
+}
+
+class Time(private var hrs: Int, private var min: Int)
+   def hours = hrs
+   def minutes = min
+
+   private val timeInternal = hrs * 60 + min
+   def before(other: Time): Boolean = other.timeInternal < timeInternal
+}
+
+class Person(var age: Int) {
+   if(age < 0) age = 0
+}
+
+
+class Person(name: String) {
+//  val firstName = name.split("\\s")(0)
+// val lastName  = name.split("\\s")(1)
+
+   val Array(firstName, lastName) = name.split("\\s+")
+
+  override def toString = "Person: "+ firstName +" "+lastName
+}
+
+class Car(val man: String, val mod: String) {
+  val manuf = man
+  val model = mod
+  val year: Int = -1
+  val plate: String = ""
+  def this(val man: String, val mod: String, val year: Int=-1, val plate: String="") {
+      this(man, mod)
+      val year: Int = year
+      val plate: String = plate
+   }
+} 
+
