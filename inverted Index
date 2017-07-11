@@ -1,0 +1,177 @@
+// this is spark code from just enough scala for spark
+
+// 1: generate a pairedRDD (filename, content) using wholeTextFiles 
+// 2: transform to another pairedRDD ((word, filename), 1) using flatMap
+// 3: another transformation: count (word, filename) ==> ((word, file), count) using reduceByKey
+// 4: convert to (word, (filename, count)) using map, it's still a pairedRDD
+// 5: group same word using groupByKey, note that the output is a RDD (word, compactBuffer)
+// 6: convert the compactBuffer to vector, sort it,and make it a string using mapValue
+
+//PART ONE
+/*
+ * "info" takes a string argument, prints, and returns it
+*/
+def info(message: String): String = {
+    println(message)
+    message
+}
+/*
+ * "error" prints erro information
+*/
+def error(message: String): String = {
+    val fullMessage = s"""
+        |**************************
+        | ERROR:  $message
+        |**************************
+        |""".stripMargin
+    println(fullMessage)
+    fullMessage
+}
+
+//val infoString = info("All is well")
+//val errorString = error("IIh oh")
+
+import java.net.URL
+import java.io.{File, BufferedInputStream, BufferedOutputStream, FileOutputStream}
+
+def curl(sourceURLString: String, targetDirectoryString: String): File = {
+    val pathSeparator = File.separator
+    val sourceFileName = sourceURLString.split("/").last
+    val outFileName = targetDirectoryString + pathSeparator + sourceFileName
+
+    println(s"Downloading $sourceURLString to $outFileName")
+    val sourceURL = new URL(sourceURLString)
+    val connection = sourceURL.openConnection()
+    val in = new BufferedInputStream(connection.getInputStream())
+
+    val targetDirectory = new File(targetDirectoryString)
+    targetDirectory.mkdirs()
+
+    val outFile = new File(outFileName)
+    val out = new BufferedOutputStream(new FileOutputStream(outFile))
+
+    val hundredK = 100*1024
+    val bytes = Array.fill[Byte](hundredK)(0)
+
+    var loops = 0
+    var count = in.read(bytes, 0, hundredK)
+    while(count != -1) {
+        if(loops % 10 == 0) print(".")
+        loops += 1
+        out.write(bytes, 0, count)
+        count = in.read(bytes, 0, hundredK)
+    }
+    println("\nFinished!")
+    in.close()
+    out.flush()
+    out.close()
+    outFile
+}
+
+val shakespeare = new File("/home/leo/Data/shakespeare")
+val success = if (shakespeare.exists == false)  {
+    if(shakespeare.mkdirs() == false) {
+        error(s"Failed to create directory path: $shakespeare")
+        false
+    } else {
+        info(s"Created $shakespeare")
+        true
+    }
+ }  else  {
+    info(s"$shakespeare already exists")
+    true
+}
+
+println("success = " + success)
+
+val pathSeparator = File.separator
+val targetDirName = shakespeare.toString
+val urlRoot = "http://www.cs.usyd.edu.au/~matty/Shakespeare/texts/comedies/"
+val plays = Seq("tamingoftheshrew", "comedyoferrors", "loveslabourslost", "midsummersnightsdream", "merrywivesofwindsor", "asyoulikeit", "twelfthnight")
+
+if (success) {
+    println(s"Downloading plays from $urlRoot.")
+    val successes = for {
+        play <- plays
+        playFileName = targetDirName + pathSeparator + play
+        playFile = new File(playFileName)
+        if (playFile.exists == false)
+            file = curl(urlRoot + play, targetDirName)
+        }  yield {
+              info(s"Downloaded $play and wrote $file")
+              s"$playFileName:\tSuccess!"
+     }
+     println("Finished!")
+     successes.foreach(println)
+}
+
+// PART TWO
+
+import java.io.File
+val pathSeparator = File.separator
+val shakespeare = new File("/home/leo/Data/shakespeare")
+
+//shakespeare.toString
+val fileContents = sc.wholeTextFiles(shakespeare.toString) // generate RDD [(String, String)]
+//fileContents.count   //this is action
+//fileContents.take(1).foreach(name_play => println(s"${name_play._1}:\n${name_play._2.take(20)}"))
+//fileContents.take(5).foreach(name_play => println(s"${name_play._1}"))
+//fileContents.take(1)._1.split(pathSeparator).last   // this is wrong: fileContents.take(1) is an array
+//fileContents.foreach( name_play => println(name_play._1.split(pathSeparator).last))
+//val filename = fileContents.map(_._1) // filename is a RDD of filenames
+// val list1 = fileContents.collect.toList
+// val (filename, contents) = fileContents.collect.toList.unzip
+
+//val firstOne = fileContents.take(2)  // firstOne is still an array with one element(which is a tuple)
+//fileContents(1)._1              // this is wrong: fileContents is a RDD
+//fileContents.take(1)._1         // this is wrong: fileContents.take(1) os an array
+//fileContents.take(3)(1)._1           
+//val firstOne0 = firstOne(1)._1
+
+//val foo: Nothing = firstOne0 // ====>this is very useful to display the type of variables<===
+
+val wordFileNameOnes = fileContents.flatMap { location_contents_tuple2 => 
+                       val words = location_contents_tuple2._2.split("""\W+""")
+                       val fileName = location_contents_tuple2._1.split(pathSeparator).last
+                       words.map( word => ((word, fileName), 1))
+                    }
+                    
+wordFileNameOnes.count
+wordFileNameOnes.take(10).foreach(println)
+
+val uniques = wordFileNameOnes.reduceByKey( (count1, count2) => count1 + count2)
+val uniques2 = wordFileNameOnes.reduceByKey( _ + _)
+val words = uniques.map(word_file_tuple3 => (word_file_tuple3._1._1,(word_file_tuple3._1._2, word_file_tuple3._2)))
+val wordGroups = words.groupByKey.sortByKey(ascending=true)
+
+val inverted = wordGroups.mapValues { iterable => 
+      val vect = iterable.toVector.sortBy {
+      file_count_tup2 => (-file_count_tup2._2, file_count_tup2._1)
+      }
+      vect.mkString(",")
+      }
+
+val wordFileNameOnes = fileContents.flatMap{
+      case (location, content) =>
+      val words = content.split("""\W+""").filter(word => word.size > 0)
+      val filename = location.split(pathSeparator).last
+      words.map(word => ((word, filename), 1))
+      }
+
+val uniques = wordFileNameOnes.reduceByKey(_ + _)
+val words = uniques.map{ case ((word, file), count) => (word, (file, count))}
+val groupWords = words.groupByKey.sortByKey(ascending=true)
+
+// groupByKey will generate pairRDD whose value is an iterable ==> it is CompactBuffer
+// this iterable can be converted to Vector, List, Array and Seq using toVector, toArray,
+// toList and toSeq, and can be used in .foreach(println)
+groupWords.take(20)(1)._2
+groupWords.take(20)(1)._2.toVector
+groupWords.take(20)(1)._2.toVector(1)
+
+val finalResults = wordGroup.mapValues{ iterable => 
+      val vect = iterable.toVector.sortBy { file_count_tup2 => 
+          (-file_count_tup2._2, file_count_tup2._1) 
+      }
+      vect.mkString(",")
+      }
