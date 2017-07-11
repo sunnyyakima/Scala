@@ -1,0 +1,33 @@
+//type match
+
+case class Person(name: String, age: Int)
+val stuff = Seq(1, 3.14159, 2L, 10, 4.4F, ("one", 1), (404F, "boo"),((11,12),21,31), "hello", new Person("Dean", 100))
+stuff.foreach {
+    case 10           => println(s"found a 10")
+    case i: Int       => println(s"found an Int:  $i")
+    case l: Long      => println(s"found a Long:  $l")
+    case f: Float     => println(s"found a Float: $f")
+    case d: Double    => println(s"found a Double:$d")
+    case Person(name2, age2) => println(s"A person: $name2, $age2")
+    case (x1, x2)     => println(s"found a two-element tuple with elements of arbitrary type: ($x1, $x2)")
+    case ((x1a,x1b),_,x3) => println(s"found a three-element tuple with 1st ad 3rd elements: ($x1a, $x1b), and third one is $x3")
+    case default      => println(s"found something else: $default")
+}
+
+def checkType(cls: Any) {               // note the type: Any
+  cls match {                                 
+    case s: String => println("is a String")
+    case d: Int => println("is a Int")    
+    case _ => println("others")             
+  }                                                   
+}
+
+// with condition
+var sign: Int = 0
+val ch: Char = 'A'
+sign = ch match {
+    case _ if (ch == 'A') => 100  /// here is the condition
+    case '+' => 1
+    case '-' => -1
+    case _ => 0
+}
