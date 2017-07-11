@@ -1,0 +1,6 @@
+
+scala -cp XXXXX.jar // will load the jar library
+
+scala>:paste  // in copy-paste mode
+
+scala>:load XXXX.scala  // run .scala file
