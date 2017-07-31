@@ -73,5 +73,9 @@ val marshalledYield =
   }
 </music>
 
-
 val marshalledWithToXml =  <music> { artists.map(_.toXml) } </music>
+
+val fruits = List("apple", "banana", "orange")
+val ul = <ul>{fruits.map(i => <li>{i}</li>)}</ul>
+(ul \ "li").length
+(ul \ "li").map(_.text)
